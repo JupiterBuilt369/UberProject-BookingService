@@ -57,14 +57,14 @@ public class BookingServiceImpl implements BookingService {
             assert response.getBody() != null;
             DriverLocationDto[] nearbyDrivers = response.getBody();
             for (DriverLocationDto driverLocationDto : nearbyDrivers) {
-                System.out.println(driverLocationDto.getDriverId() + " : " + "longitude, latitude :" + driverLocationDto.getLongitude() + " , " + driverLocationDto.getLatitude());
+                System.out.println(driverLocationDto.getDriverId() + " : " + "longitude, latitude : " + driverLocationDto.getLongitude() + " , " + driverLocationDto.getLatitude());
             }
         }
 
         return CreateBookingResponseDto.builder()
                 .bookingId(newBooking.getId())
                 .bookingStatus(newBooking.getBookingStatus().toString())
-                .driver(Optional.of(newBooking.getDriver()))
+//                .driver(Optional.of(newBooking.getDriver()))
                 .build();
     }
 }
