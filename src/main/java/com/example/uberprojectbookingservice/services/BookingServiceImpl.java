@@ -1,17 +1,17 @@
 package com.example.uberprojectbookingservice.services;
 
 import com.example.uberprojectbookingservice.api.LocationServiceApi;
-import com.example.uberprojectbookingservice.dto.CreateBookingDto;
-import com.example.uberprojectbookingservice.dto.CreateBookingResponseDto;
-import com.example.uberprojectbookingservice.dto.DriverLocationDto;
-import com.example.uberprojectbookingservice.dto.NearbyDriverRequestDto;
+import com.example.uberprojectbookingservice.dto.*;
 import com.example.uberprojectbookingservice.repositories.BookingRepository;
+import com.example.uberprojectbookingservice.repositories.DriverRepository;
 import com.example.uberprojectbookingservice.repositories.PassengerRepository;
 import org.example.uberprojectentityservice.model.Booking;
 import org.example.uberprojectentityservice.model.BookingStatus;
+import org.example.uberprojectentityservice.model.Driver;
 import org.example.uberprojectentityservice.model.Passenger;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import retrofit2.Call;
@@ -29,16 +29,18 @@ public class BookingServiceImpl implements BookingService {
     private final PassengerRepository passengerRepository;
     private final BookingRepository bookingRepository;
     public final RestTemplate restTemplate;
+    private final DriverRepository driverRepository;
     public LocationServiceApi locationServiceApi;
 
-    public static final String LOCATION_SERVICE_URL = "http://localhost:8081/api/location/";
+//    public static final String LOCATION_SERVICE_URL = "http://localhost:8081/api/location/";
 
 
-    public BookingServiceImpl(BookingRepository bookingRepository, PassengerRepository passengerRepository, LocationServiceApi locationServiceApi) {
+    public BookingServiceImpl(BookingRepository bookingRepository, PassengerRepository passengerRepository, LocationServiceApi locationServiceApi, DriverRepository driverRepository) {
         this.bookingRepository = bookingRepository;
         this.passengerRepository = passengerRepository;
         this.locationServiceApi = locationServiceApi;
         this.restTemplate = new RestTemplate();
+        this.driverRepository = driverRepository;
     }
 
 
@@ -82,6 +84,20 @@ public class BookingServiceImpl implements BookingService {
                 .build();
     }
 
+    @Override
+    public UpdateBookingResponseDto UpdateBooking(UpdateBookingRequestDto requestDto, Long bookingId) {
+        Optional<Driver> driver =  driverRepository.findById(requestDto.getDriverId());
+             bookingRepository.updateBookingAndDriverById(bookingId, BookingStatus.SCHEDULED,driver.get());
+             Optional<Booking> booking = bookingRepository.findById(bookingId);
+             return UpdateBookingResponseDto
+                     .builder()
+                     .status(booking.get().getBookingStatus ())
+                     .driver(Optional.of(booking.get().getDriver()))
+                     .build();
+
+    }
+
+    @Async
     public void processNearbyDriversAsync(NearbyDriverRequestDto bookingDetails){
         Call<DriverLocationDto[]> call = locationServiceApi.getNearbyDrivers(bookingDetails);
         call.enqueue(new Callback<DriverLocationDto[]>() {
