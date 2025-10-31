@@ -1,5 +1,6 @@
 package com.example.uberprojectbookingservice.services;
 
+import com.example.uberprojectbookingservice.api.LocationServiceApi;
 import com.example.uberprojectbookingservice.dto.CreateBookingDto;
 import com.example.uberprojectbookingservice.dto.CreateBookingResponseDto;
 import com.example.uberprojectbookingservice.dto.DriverLocationDto;
@@ -9,9 +10,14 @@ import com.example.uberprojectbookingservice.repositories.PassengerRepository;
 import org.example.uberprojectentityservice.model.Booking;
 import org.example.uberprojectentityservice.model.BookingStatus;
 import org.example.uberprojectentityservice.model.Passenger;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.http.Body;
 
 import java.util.Arrays;
 import java.util.List;
@@ -23,12 +29,15 @@ public class BookingServiceImpl implements BookingService {
     private final PassengerRepository passengerRepository;
     private final BookingRepository bookingRepository;
     public final RestTemplate restTemplate;
+    public LocationServiceApi locationServiceApi;
+
     public static final String LOCATION_SERVICE_URL = "http://localhost:8081/api/location/";
 
 
-    public BookingServiceImpl(BookingRepository bookingRepository, PassengerRepository passengerRepository) {
+    public BookingServiceImpl(BookingRepository bookingRepository, PassengerRepository passengerRepository, LocationServiceApi locationServiceApi) {
         this.bookingRepository = bookingRepository;
         this.passengerRepository = passengerRepository;
+        this.locationServiceApi = locationServiceApi;
         this.restTemplate = new RestTemplate();
     }
 
@@ -44,12 +53,14 @@ public class BookingServiceImpl implements BookingService {
                 .passenger(passenger.get())
                 .build();
         Booking newBooking = bookingRepository.save(booking);
+
         NearbyDriverRequestDto requestDto = NearbyDriverRequestDto
                 .builder()
                 .latitude(bookingDetails.getStartLocation().getLatitude())
                 .longitude(bookingDetails.getStartLocation().getLongitude())
                 .build();
 
+        /*
         ResponseEntity<DriverLocationDto[]> response =
                 restTemplate.postForEntity(LOCATION_SERVICE_URL + "/nearby/drivers",requestDto , DriverLocationDto[].class);
 
@@ -60,11 +71,36 @@ public class BookingServiceImpl implements BookingService {
                 System.out.println(driverLocationDto.getDriverId() + " : " + "longitude, latitude : " + driverLocationDto.getLongitude() + " , " + driverLocationDto.getLatitude());
             }
         }
+        */
+
+        processNearbyDriversAsync(requestDto);
 
         return CreateBookingResponseDto.builder()
                 .bookingId(newBooking.getId())
                 .bookingStatus(newBooking.getBookingStatus().toString())
 //                .driver(Optional.of(newBooking.getDriver()))
                 .build();
+    }
+
+    public void processNearbyDriversAsync(NearbyDriverRequestDto bookingDetails){
+        Call<DriverLocationDto[]> call = locationServiceApi.getNearbyDrivers(bookingDetails);
+        call.enqueue(new Callback<DriverLocationDto[]>() {
+            @Override
+            public void onResponse(@NotNull Call<DriverLocationDto[]> call, @NotNull Response<DriverLocationDto[]> response) {
+                if(response.isSuccessful() &&  response.body() != null){
+                    DriverLocationDto[] nearbyDrivers = response.body();
+                    for (DriverLocationDto driverLocationDto : nearbyDrivers) {
+                        System.out.println(driverLocationDto.getDriverId() + " : " + "longitude, latitude : " + driverLocationDto.getLongitude() + " , " + driverLocationDto.getLatitude());
+                    }
+
+                }
+            }
+
+            @Override
+            public void onFailure(Call<DriverLocationDto[]> call, Throwable throwable) {
+                System.out.println(throwable.getMessage());
+            }
+        });
+
     }
 }
