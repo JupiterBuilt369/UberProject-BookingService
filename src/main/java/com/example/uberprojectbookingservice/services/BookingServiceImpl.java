@@ -93,6 +93,7 @@ public class BookingServiceImpl implements BookingService {
                      .builder()
                      .status(booking.get().getBookingStatus ())
                      .driver(Optional.of(booking.get().getDriver()))
+                     .BookingId(bookingId)
                      .build();
 
     }
