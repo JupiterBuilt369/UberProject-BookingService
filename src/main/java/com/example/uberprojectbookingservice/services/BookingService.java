@@ -9,4 +9,6 @@ public interface BookingService {
     CreateBookingResponseDto CreateBooking(CreateBookingDto booking);
 
     UpdateBookingResponseDto UpdateBooking(UpdateBookingRequestDto requestDto, Long bookingId);
+
+
 }
