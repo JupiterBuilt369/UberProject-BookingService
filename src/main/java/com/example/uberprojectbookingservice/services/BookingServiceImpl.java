@@ -107,6 +107,7 @@ public class BookingServiceImpl implements BookingService {
                                 driverLocationDto.getLatitude());
                     }
 
+                    System.out.println("before raiseRideRequestAsync");
                     // Step 3: Notify socket service to raise ride request for available drivers
                     raiseRideRequestAsync(RideRequestDto.builder()
                             .passengerId(passengerId)
@@ -128,6 +129,7 @@ public class BookingServiceImpl implements BookingService {
     // ============================================================
     @Async
     public void raiseRideRequestAsync(RideRequestDto rideRequestDto) {
+
 
         // Step 1: Call UberSocketApi to broadcast ride request to available drivers
         Call<Boolean> call = uberSocketApi.raiseRideRequest(rideRequestDto);
